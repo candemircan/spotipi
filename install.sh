@@ -23,8 +23,11 @@ echo "Checking SSH to $PI_HOST ..."
 "${SSH[@]}" true
 
 echo "Copying binary ..."
+# Upload to a temp name: mv over the running binary works, scp in place
+# would fail with ETXTBSY while librespot.service is active.
 "${SSH[@]}" 'mkdir -p ~/bin ~/.config/systemd/user ~/.cache/librespot'
-scp -q -i "$KEY" "$BIN" "$PI_USER@$PI_HOST:~/bin/librespot"
+scp -q -i "$KEY" "$BIN" "$PI_USER@$PI_HOST:~/bin/.librespot.new"
+"${SSH[@]}" 'mv -f ~/bin/.librespot.new ~/bin/librespot'
 
 echo "Installing service ..."
 # ExecStartPre: the USB dongle resets to a near-silent -21 dB on every boot
@@ -48,7 +51,8 @@ EOF
 
 "${SSH[@]}" 'loginctl enable-linger
 systemctl --user daemon-reload
-systemctl --user enable --now librespot.service
+systemctl --user enable librespot.service
+systemctl --user restart librespot.service
 sleep 2
 systemctl --user is-active librespot.service'
 
