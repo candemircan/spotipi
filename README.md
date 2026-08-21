@@ -69,34 +69,15 @@ limitation, not a Pi one).
 
 ### 3. Install on the Pi
 
-Copy the binary and set up a **user-level** systemd service (no root daemon):
+With the Pi powered on and on the network:
 
 ```bash
-scp -i ~/.ssh/spotipi_ed25519 cross/librespot-v6 USER@spotipi.local:~/bin/librespot
-ssh -i ~/.ssh/spotipi_ed25519 USER@spotipi.local
-loginctl enable-linger          # user services start at boot without a login
-mkdir -p ~/.config/systemd/user ~/.cache/librespot
-cat > ~/.config/systemd/user/librespot.service <<'EOF'
-[Unit]
-Description=Librespot (Spotify Connect client)
-Documentation=https://github.com/librespot-org/librespot
-After=network-online.target
-
-[Service]
-# Pin the USB dongle's hardware volume: it resets to a near-silent -21 dB on
-# every boot (alsa-restore is not enabled on OS Lite). librespot applies its
-# own software volume on top, so hardware stays at a fixed reference.
-ExecStartPre=/usr/bin/amixer -c Device set Speaker 100% unmute
-ExecStart=%h/bin/librespot --name spotipi --backend alsa --device plughw:CARD=Device --bitrate 320 --cache %h/.cache/librespot
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=default.target
-EOF
-systemctl --user daemon-reload
-systemctl --user enable --now librespot.service
+./install.sh
 ```
+
+Prompts for the Pi username, then copies the binary to `~/bin/librespot`,
+installs the **user-level** systemd service (no root daemon), enables linger
+(user services start at boot without a login), and starts it. Safe to re-run.
 
 ## SSH access from other devices
 
@@ -135,6 +116,7 @@ ssh <user>@spotipi.local     # any Linux/macOS/Windows 10+ machine, Pi password
 |---|---|
 | `flash.sh` | Download/verify/flash the OS image to the SD card |
 | `secrets.sh` | Interactive: write cloud-init first-boot config to the SD card |
+| `install.sh` | Push binary + systemd service to the Pi over SSH (idempotent) |
 | `cross/Dockerfile.armv6-qemu` | The working ARMv6 build (Raspbian container under QEMU) |
 | `cross/Dockerfile.armv6` | The broken Debian cross-build, kept as a warning |
 | `cross/build-qemu.log` | Build log (gitignored) |
