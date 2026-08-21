@@ -119,7 +119,7 @@ ssh <user>@spotipi.local     # any Linux/macOS/Windows 10+ machine, Pi password
 | `install.sh` | Push binary + systemd service to the Pi over SSH (idempotent) |
 | `cross/Dockerfile.armv6-qemu` | The working ARMv6 build (Raspbian container under QEMU) |
 | `cross/Dockerfile.armv6` | The broken Debian cross-build, kept as a warning |
-| `cross/build-qemu.log` | Build log (gitignored) |
+| `cross/build-qemu.log` | Build log, produced by `docker build` (gitignored, not in repo) |
 
 Not in the repo (gitignored, reproducible): the OS image, the librespot
 tarball/source, and the built binary. The working binary also lives on the Pi
