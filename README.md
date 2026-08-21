@@ -3,6 +3,8 @@
 A Raspberry Pi 1 Model B (RBCA000) acting as a Spotify Connect speaker: pick
 `spotipi` under Devices in the Spotify app and it plays on the cabled analog
 speakers. The phone is only the remote; playback continues if the phone leaves.
+It is also an AirPlay receiver via `shairport-sync`: Apple devices can cast any
+audio (e.g. movie sound from a video player) to it with lip-sync correction.
 
 ## Hardware
 
@@ -77,7 +79,25 @@ With the Pi powered on and on the network:
 
 Prompts for the Pi username, then copies the binary to `~/bin/librespot`,
 installs the **user-level** systemd service (no root daemon), enables linger
-(user services start at boot without a login), and starts it. Safe to re-run.
+(user services start at boot without a login), and starts it. It then installs
+`shairport-sync` from the Raspbian repo as an AirPlay receiver — this step
+prompts for the Pi password once (system-level service, needs sudo). Safe to
+re-run.
+
+## Sending audio from other devices
+
+| Sender | How |
+|---|---|
+| iOS / macOS | AirPlay picker → "spotipi" (lip-sync corrected) |
+| Linux (PipeWire) | enable the built-in AirPlay sender once, see below |
+| Android | Spotify app only (Connect). No OS-level WiFi audio casting exists |
+| Windows | nothing built-in; use Spotify Connect or skip |
+
+Linux (PipeWire) needs its AirPlay sender enabled once per machine — the
+drop-in lives in the dotfiles:
+`omarchy/.config/pipewire/pipewire-pulse.conf.d/raop.conf`
+(it loads `module-raop-discover`; "spotipi" then appears as an output device
+in the volume mixer).
 
 ## SSH access from other devices
 
@@ -109,6 +129,9 @@ ssh <user>@spotipi.local     # any Linux/macOS/Windows 10+ machine, Pi password
   WiFi dongle associates late — wait for the dongle's green LED to blink.
 - The dongle is 2.4 GHz only — pick the non-5G SSID if the router splits bands.
 - USB audio card is `plughw:CARD=Device` (card 1, by name — survives reordering).
+- The ALSA device is exclusive: AirPlay while Spotify is actively playing
+  fails until Spotify is paused (whichever service opened the device last
+  wins; both release it when idle).
 
 ## Files
 
@@ -116,7 +139,8 @@ ssh <user>@spotipi.local     # any Linux/macOS/Windows 10+ machine, Pi password
 |---|---|
 | `flash.sh` | Download/verify/flash the OS image to the SD card |
 | `secrets.sh` | Interactive: write cloud-init first-boot config to the SD card |
-| `install.sh` | Push binary + systemd service to the Pi over SSH (idempotent) |
+| `install.sh` | Push binary + systemd services to the Pi over SSH (idempotent) |
+| `shairport-sync.conf` | AirPlay receiver config, installed to `/etc/shairport-sync.conf` |
 | `cross/Dockerfile.armv6-qemu` | The working ARMv6 build (Raspbian container under QEMU) |
 | `cross/Dockerfile.armv6` | The broken Debian cross-build, kept as a warning |
 | `cross/build-qemu.log` | Build log, produced by `docker build` (gitignored, not in repo) |

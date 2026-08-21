@@ -1,7 +1,7 @@
 #!/bin/bash
-# Install/update librespot on the Pi over SSH: binary, user-level systemd
-# service (with hardware-volume pinning), linger. Idempotent — safe to re-run.
-# Run from this desktop with the Pi powered on and on the network.
+# Install/update librespot + shairport-sync on the Pi over SSH: binaries,
+# systemd services (with hardware-volume pinning), linger. Idempotent — safe
+# to re-run. Run from this desktop with the Pi powered on and on the network.
 #
 # Usage:            ./install.sh
 # Overrides:        PI_USER, PI_HOST, KEY, BIN (env vars)
@@ -18,6 +18,8 @@ BIN="${BIN:-$HERE/librespot-v6}"
 [ -f "$BIN" ] || { echo "ERROR: $BIN missing (rebuild it: README step 2)"; exit 1; }
 
 SSH=(ssh -i "$KEY" -o BatchMode=yes "$PI_USER@$PI_HOST")
+# -tt variant for commands needing interactive sudo on the Pi.
+SSH_TTY=(ssh -i "$KEY" -o BatchMode=yes -tt "$PI_USER@$PI_HOST")
 
 echo "Checking SSH to $PI_HOST ..."
 "${SSH[@]}" true
@@ -56,4 +58,14 @@ systemctl --user restart librespot.service
 sleep 2
 systemctl --user is-active librespot.service'
 
-echo "Done. spotipi should appear in your Spotify devices."
+echo "Installing shairport-sync (AirPlay receiver) ..."
+scp -q -i "$KEY" "$HERE/shairport-sync.conf" "$PI_USER@$PI_HOST:/tmp/shairport-sync.conf"
+# Prompts for the Pi password once (password sudo, no NOPASSWD).
+"${SSH_TTY[@]}" 'sudo apt-get install -y shairport-sync
+sudo install -m 644 /tmp/shairport-sync.conf /etc/shairport-sync.conf
+rm /tmp/shairport-sync.conf
+sudo systemctl enable shairport-sync
+sudo systemctl restart shairport-sync'
+"${SSH[@]}" 'systemctl is-active shairport-sync'
+
+echo "Done. spotipi appears in Spotify devices (Connect) and AirPlay pickers."
