@@ -1,0 +1,30 @@
+# Cross-compile librespot for Raspberry Pi 1 (ARMv6, arm-unknown-linux-gnueabihf).
+# Build from ~/Work/spotipi/cross with:
+#   docker build -t librespot-armv6 -f Dockerfile.armv6 librespot-0.8.0
+# Recipe follows librespot's contrib/Dockerfile.Rpi, updated for Trixie.
+# TLS: rustls with bundled webpki roots (no OpenSSL cross-compile needed).
+FROM debian:trixie
+
+RUN dpkg --add-architecture armhf && apt-get update && \
+    apt-get install -y --no-install-recommends \
+      ca-certificates curl pkg-config build-essential \
+      crossbuild-essential-armhf \
+      libasound2-dev:armhf
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+ENV PATH=/root/.cargo/bin:$PATH
+RUN rustup target add arm-unknown-linux-gnueabihf
+
+ENV CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc \
+    PKG_CONFIG_ALLOW_CROSS=1 \
+    PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig \
+    CC_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc \
+    CXX_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++ \
+    CFLAGS_arm_unknown_linux_gnueabihf="-march=armv6 -mfpu=vfp -mfloat-abi=hard" \
+    CXXFLAGS_arm_unknown_linux_gnueabihf="-march=armv6 -mfpu=vfp -mfloat-abi=hard"
+
+WORKDIR /src
+COPY . /src
+RUN cargo build --release --target arm-unknown-linux-gnueabihf \
+      --no-default-features \
+      --features "alsa-backend,with-libmdns,rustls-tls-webpki-roots"

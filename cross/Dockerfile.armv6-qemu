@@ -1,0 +1,22 @@
+# Build librespot for Raspberry Pi 1 (ARMv6) in a genuine Raspbian armv6
+# container, executed under QEMU user emulation (binfmt) on the x86_64 host.
+# Everything in the toolchain is then ARMv6-compiled, unlike a Debian armhf
+# cross build whose crt/libgcc objects are ARMv7 and crash the Pi 1.
+#
+#   docker run --rm --privileged multiarch/qemu-user-static:register --reset
+#   docker build --platform linux/arm/v6 -t librespot-armv6 -f Dockerfile.armv6-qemu librespot-0.8.0
+FROM balenalib/raspberry-pi-debian:latest
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+      build-essential pkg-config binutils ca-certificates curl \
+      libasound2-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+ENV PATH=/root/.cargo/bin:$PATH
+
+WORKDIR /src
+COPY . /src
+RUN cargo build --release --no-default-features \
+      --features "alsa-backend,with-libmdns,rustls-tls-webpki-roots" && \
+    readelf -A target/release/librespot | grep -E 'Tag_CPU_name|Tag_CPU_arch'

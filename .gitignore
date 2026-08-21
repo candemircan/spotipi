@@ -1,0 +1,10 @@
+# Build artifacts (large, reproducible)
+*.img
+*.img.xz
+*.sha256
+download.log
+librespot
+librespot-v6
+cross/build-qemu.log
+cross/librespot-0.8.0/
+cross/librespot-0.8.0.tar.gz
