@@ -83,6 +83,10 @@ Documentation=https://github.com/librespot-org/librespot
 After=network-online.target
 
 [Service]
+# Pin the USB dongle's hardware volume: it resets to a near-silent -21 dB on
+# every boot (alsa-restore is not enabled on OS Lite). librespot applies its
+# own software volume on top, so hardware stays at a fixed reference.
+ExecStartPre=/usr/bin/amixer -c Device set Speaker 100% unmute
 ExecStart=%h/bin/librespot --name spotipi --backend alsa --device plughw:CARD=Device --bitrate 320 --cache %h/.cache/librespot
 Restart=on-failure
 RestartSec=5
@@ -94,12 +98,32 @@ systemctl --user daemon-reload
 systemctl --user enable --now librespot.service
 ```
 
+## SSH access from other devices
+
+Yes — the Pi accepts SSH from anything on the LAN. Password authentication is
+enabled (in addition to the desktop's `spotipi_ed25519` key):
+
+```bash
+ssh <user>@spotipi.local     # any Linux/macOS/Windows 10+ machine, Pi password
+```
+
+- `spotipi.local` resolves via mDNS/Avahi: works out of the box on Linux,
+  macOS, Windows 10+, and iOS apps. Android mostly lacks mDNS — get the IP
+  from the router's device list instead (DHCP, was 192.168.1.107 at first boot).
+- To add another machine's key permanently: `ssh-copy-id <user>@spotipi.local`.
+- The generated `spotipi_ed25519` key is just one entry in `authorized_keys`;
+  removing it later doesn't affect other logins.
+
 ## Gotchas learned
 
-- **USB dongle volume**: the Generalplus chip starts at 53 % (−21 dB) which is
-  nearly inaudible. Fixed once over SSH: `amixer -c 1 set Speaker 100% unmute`.
-  Not persisted across replug yet (ALSA mixer state usually persists via
-  `alsa-state`; re-run the amixer command if audio goes silent).
+- **USB dongle volume resets on every boot.** The Generalplus chip defaults to
+  53 % (−21 dB), which is nearly inaudible. Raspberry Pi OS Lite ships
+  `alsa-restore.service`/`alsa-store.service` but does *not* enable them, so
+  mixer state is not restored at boot. Fix: the librespot unit below pins the
+  hardware volume to 100 % on every start via `ExecStartPre` (works without
+  root — the user is in the `audio` group; librespot does its own software
+  volume on top). Manual one-off fix if audio ever goes silent:
+  `amixer -c Device set Speaker 100% unmute`
 - First boot takes 3–5 min: cloud-init, filesystem resize, one reboot, and the
   WiFi dongle associates late — wait for the dongle's green LED to blink.
 - The dongle is 2.4 GHz only — pick the non-5G SSID if the router splits bands.
