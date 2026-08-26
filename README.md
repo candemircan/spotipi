@@ -81,8 +81,10 @@ Prompts for the Pi username, then copies the binary to `~/bin/librespot`,
 installs the **user-level** systemd service (no root daemon), enables linger
 (user services start at boot without a login), and starts it. It then installs
 `shairport-sync` from the Raspbian repo as an AirPlay receiver — this step
-prompts for the Pi password once (system-level service, needs sudo). Safe to
-re-run.
+prompts for the Pi password once (system-level service, needs sudo). Finally
+it enables a persistent journal (`/var/log/journal`); without it, logs are
+lost on every power cycle and a dropout cannot be diagnosed after the fact.
+Safe to re-run.
 
 ## Sending audio from other devices
 

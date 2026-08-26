@@ -68,4 +68,12 @@ sudo systemctl enable shairport-sync
 sudo systemctl restart shairport-sync'
 "${SSH[@]}" 'systemctl is-active shairport-sync'
 
+echo "Enabling persistent journal ..."
+# Volatile journald loses the log on every power cycle, so a dropout cannot
+# be diagnosed after the fact (journalctl -b -1). Idempotent.
+"${SSH_TTY[@]}" 'sudo mkdir -p /var/log/journal
+sudo systemd-tmpfiles --create --prefix /var/log/journal
+sudo systemctl restart systemd-journald'
+"${SSH[@]}" 'test -d /var/log/journal'
+
 echo "Done. spotipi appears in Spotify devices (Connect) and AirPlay pickers."
