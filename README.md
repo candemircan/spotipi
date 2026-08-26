@@ -40,6 +40,11 @@ Resulting Pi config: hostname `spotipi` (reachable as `spotipi.local`),
 user with password sudo (no NOPASSWD), SSH with password + `spotipi_ed25519`
 key auth, WiFi country DE, 2.4 GHz network, US keyboard, Europe/Berlin timezone.
 
+Access from morukat (home server): its own key `~/.ssh/spotipi_ed25519` is in
+the Pi's `authorized_keys`, plus a `Host spotipi` block in morukat's ssh config
+(`HostName` pinned to the DHCP address — morukat has no mDNS resolver, so pin
+a DHCP reservation for the Pi on the router or install avahi there).
+
 ### 2. Cross-compile librespot for ARMv6
 
 No prebuilt Spotify client exists for ARMv6 (raspotify dropped Pi 1 support;
